@@ -1,0 +1,159 @@
+{
+  "source_csv": "data\\raw\\lightweight_semiconductor_sample.csv",
+  "source_database_version": "2026.04.13",
+  "rows_input": 10000,
+  "semiconductor_proxy_count": 3314,
+  "density_cutoff_g_cm3": 3.0046803097136747,
+  "stable_lightweight_candidate_count": 78,
+  "ranked_by": "density ascending",
+  "eligibility": {
+    "is_metal": false,
+    "band_gap_eV": "(0.0, 3.0]",
+    "density_g_cm3": "<= semiconductor-proxy 25th percentile (3.004680)",
+    "is_stable": true
+  },
+  "ordinal_score_note": "Relative rank mapped linearly from 100 (first) to 0 (last); not a probability or calibrated quality score.",
+  "top_n_exported": 20,
+  "top_candidates": [
+    {
+      "rank": 1,
+      "material_id": "mp-aaacczwg",
+      "formula_pretty": "CaAlH5",
+      "density": 1.7220285996481248,
+      "band_gap": 2.6922902476690567
+    },
+    {
+      "rank": 2,
+      "material_id": "mp-aaabkrdb",
+      "formula_pretty": "Ca(H2N)2",
+      "density": 1.7698638751622893,
+      "band_gap": 2.7109
+    },
+    {
+      "rank": 3,
+      "material_id": "mp-aaabetuy",
+      "formula_pretty": "BS2",
+      "density": 1.8413496941358152,
+      "band_gap": 2.5564
+    },
+    {
+      "rank": 4,
+      "material_id": "mp-aaabevik",
+      "formula_pretty": "K2Na3SiP3",
+      "density": 1.9136004933441044,
+      "band_gap": 0.8900999999999999
+    },
+    {
+      "rank": 5,
+      "material_id": "mp-aaabevma",
+      "formula_pretty": "P2S5",
+      "density": 1.9214385645646213,
+      "band_gap": 2.554
+    },
+    {
+      "rank": 6,
+      "material_id": "mp-aaabevia",
+      "formula_pretty": "K3AlP2",
+      "density": 1.9365460335118148,
+      "band_gap": 0.6989999999999998
+    },
+    {
+      "rank": 7,
+      "material_id": "mp-aaabkptb",
+      "formula_pretty": "K2Sn(H2N)6",
+      "density": 1.9582868315235664,
+      "band_gap": 2.4109000000000003
+    },
+    {
+      "rank": 8,
+      "material_id": "mp-aaacqkqj",
+      "formula_pretty": "K2PS3",
+      "density": 1.9660855707777916,
+      "band_gap": 2.8872754990580787
+    },
+    {
+      "rank": 9,
+      "material_id": "mp-aaabetym",
+      "formula_pretty": "FePCl8",
+      "density": 2.084334209724888,
+      "band_gap": 1.4417
+    },
+    {
+      "rank": 10,
+      "material_id": "mp-aaackidz",
+      "formula_pretty": "OF2",
+      "density": 2.1962881563276344,
+      "band_gap": 2.1241
+    },
+    {
+      "rank": 11,
+      "material_id": "mp-aaabetyl",
+      "formula_pretty": "Al2CoCl8",
+      "density": 2.240466252954762,
+      "band_gap": 0.3431999999999999
+    },
+    {
+      "rank": 12,
+      "material_id": "mp-aaachrwm",
+      "formula_pretty": "FeCl3",
+      "density": 2.271085888606323,
+      "band_gap": 0.8119000000000001
+    },
+    {
+      "rank": 13,
+      "material_id": "mp-aaabetzy",
+      "formula_pretty": "S3(NO7)2",
+      "density": 2.2822067840028635,
+      "band_gap": 1.4050011037264358
+    },
+    {
+      "rank": 14,
+      "material_id": "mp-aaabevzu",
+      "formula_pretty": "K2FeH8(SO6)2",
+      "density": 2.2873849565947806,
+      "band_gap": 0.8790999999999999
+    },
+    {
+      "rank": 15,
+      "material_id": "mp-aaabxjyc",
+      "formula_pretty": "KF3",
+      "density": 2.3032139376975054,
+      "band_gap": 0.0924019250902516
+    },
+    {
+      "rank": 16,
+      "material_id": "mp-aaabkhxe",
+      "formula_pretty": "LiB13C2",
+      "density": 2.304013100842023,
+      "band_gap": 2.7108
+    },
+    {
+      "rank": 17,
+      "material_id": "mp-aaacdjyd",
+      "formula_pretty": "LiSiB6",
+      "density": 2.3555393810605008,
+      "band_gap": 1.6762000000000006
+    },
+    {
+      "rank": 18,
+      "material_id": "mp-aaabkqav",
+      "formula_pretty": "Mg3MnH7",
+      "density": 2.35600714879588,
+      "band_gap": 1.6630999999999996
+    },
+    {
+      "rank": 19,
+      "material_id": "mp-aaabkted",
+      "formula_pretty": "CsTi(PS4)2",
+      "density": 2.386444935805151,
+      "band_gap": 1.372
+    },
+    {
+      "rank": 20,
+      "material_id": "mp-aaabkoyx",
+      "formula_pretty": "Li4H6Ru",
+      "density": 2.4047919376251,
+      "band_gap": 2.388
+    }
+  ]
+}

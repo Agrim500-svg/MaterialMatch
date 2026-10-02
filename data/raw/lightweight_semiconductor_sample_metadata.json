@@ -1,0 +1,36 @@
+{
+  "source": "Materials Project summary endpoint via official mp-api client",
+  "retrieved_on": "2026-10-02",
+  "database_version": "2026.04.13",
+  "active_summary_records_at_retrieval": 154377,
+  "sample_rows": 10000,
+  "sampling_method": "10 randomly selected API pages across active non-deprecated summary records",
+  "random_seed": 20261002,
+  "page_size": 1000,
+  "sampled_pages": [
+    23,
+    36,
+    41,
+    69,
+    81,
+    90,
+    94,
+    103,
+    127,
+    138
+  ],
+  "fields": [
+    "material_id",
+    "formula_pretty",
+    "is_metal",
+    "band_gap",
+    "density",
+    "is_stable",
+    "energy_above_hull"
+  ],
+  "assumptions": {
+    "semiconductor_proxy": "0 < band_gap <= 3 eV and is_metal == False (operational semiconductor proxy)",
+    "lightweight_cutoff": "25th percentile of density within semiconductor-proxy subset",
+    "stability_screen": "Materials Project is_stable == True"
+  }
+}

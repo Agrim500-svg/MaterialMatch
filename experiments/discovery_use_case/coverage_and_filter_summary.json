@@ -1,0 +1,68 @@
+{
+  "database_version": "2026.04.13",
+  "active_summary_records": 154377,
+  "sample_rows": 10000,
+  "missing_values": {
+    "material_id": 0,
+    "formula_pretty": 0,
+    "is_metal": 11,
+    "band_gap": 2,
+    "density": 0,
+    "is_stable": 0,
+    "energy_above_hull": 1
+  },
+  "duplicate_material_ids": 0,
+  "band_gap_distribution_eV": {
+    "count": 9998.0,
+    "mean": 0.7888670853378513,
+    "std": 1.370755655892148,
+    "min": 0.0,
+    "10%": 0.0,
+    "25%": 0.0,
+    "50%": 0.0,
+    "75%": 1.1634749999999998,
+    "90%": 2.8469900000000004,
+    "max": 9.328899999999999
+  },
+  "density_distribution_g_cm3": {
+    "count": 10000.0,
+    "mean": 5.442349143077803,
+    "std": 2.9764493925530426,
+    "min": 0.023670127883518098,
+    "10%": 2.0462029668430795,
+    "25%": 3.3034838561002213,
+    "50%": 4.945645024053621,
+    "75%": 7.276012426032559,
+    "90%": 9.26332374736311,
+    "max": 22.64704460265362
+  },
+  "energy_above_hull_distribution_eV_per_atom": {
+    "count": 9999.0,
+    "mean": 0.3317835428125975,
+    "std": 0.7554616289017004,
+    "min": 0.0,
+    "10%": 0.0,
+    "25%": 0.0069046649536894655,
+    "50%": 0.06427481703703286,
+    "75%": 0.23207699501129175,
+    "90%": 0.9221654581266697,
+    "max": 9.713490067092309
+  },
+  "metal_flag_counts": {
+    "True": 5765,
+    "False": 4224,
+    "None": 11
+  },
+  "is_stable_counts": {
+    "False": 8134,
+    "True": 1866
+  },
+  "positive_band_gap_count": 4248,
+  "band_gap_zero_count": 5750,
+  "semiconductor_proxy_count": 3314,
+  "semiconductor_density_q25_g_cm3": 3.0046803097136747,
+  "lightweight_semiconductor_proxy_count": 829,
+  "stable_semiconductor_proxy_count": 570,
+  "lightweight_stable_semiconductor_count": 78,
+  "final_candidate_stable_fraction": 1.0
+}

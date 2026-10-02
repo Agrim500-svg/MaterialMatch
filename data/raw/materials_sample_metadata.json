@@ -1,0 +1,16 @@
+{
+  "source": "Materials Project summary endpoint (official mp-api client)",
+  "retrieved_on": "2026-10-02",
+  "database_version": "2026.04.13",
+  "active_summary_records_at_retrieval": 154377,
+  "sample_rows": 10000,
+  "sampling_method": "10 randomly selected API pages across active, non-deprecated summary records",
+  "random_seed": 42,
+  "page_size": 1000,
+  "sampled_pages": [6, 22, 26, 28, 35, 57, 62, 70, 139, 151],
+  "fields": [
+    "material_id", "formula_pretty", "elements", "nelements", "nsites", "volume",
+    "density", "band_gap", "formation_energy_per_atom", "energy_above_hull",
+    "is_stable", "is_metal"
+  ]
+}

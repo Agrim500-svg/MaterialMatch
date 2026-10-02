@@ -1,0 +1,34 @@
+{
+  "source_csv": "data/raw/materials_sample.csv",
+  "materials_project_database_version": "2026.04.13",
+  "rows_input": 10000,
+  "rows_clustered": 10000,
+  "feature_count": 157,
+  "composition_feature_count": 153,
+  "property_features": [
+    "band_gap",
+    "density",
+    "formation_energy_per_atom",
+    "energy_above_hull"
+  ],
+  "preprocessing": "median imputation then StandardScaler; fit to full unsupervised sample",
+  "landscape": "2-component PCA on scaled combined feature matrix",
+  "clustering_space": "PCA components retaining 95% of variance",
+  "silhouette_sample_size": 1500,
+  "k_tested": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "selected_k_by_sampled_silhouette": 2,
+  "selected_k_sampled_silhouette": 0.22103968460951107,
+  "random_seed": 42,
+  "python_version": "3.14.8",
+  "numpy_version": "2.5.3",
+  "pandas_version": "3.0.6",
+  "scikit_learn_version": "1.9.1"
+}

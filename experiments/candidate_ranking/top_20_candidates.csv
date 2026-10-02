@@ -1,0 +1,21 @@
+rank,relative_density_rank_score,material_id,formula_pretty,density,band_gap,energy_above_hull,is_stable,is_metal,ranking_basis
+1,100.0,mp-aaacczwg,CaAlH5,1.7220285996481248,2.6922902476690567,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+2,98.7,mp-aaabkrdb,Ca(H2N)2,1.7698638751622893,2.7109,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+3,97.4,mp-aaabetuy,BS2,1.8413496941358152,2.5564,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+4,96.1,mp-aaabevik,K2Na3SiP3,1.9136004933441044,0.8900999999999999,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+5,94.81,mp-aaabevma,P2S5,1.9214385645646213,2.554,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+6,93.51,mp-aaabevia,K3AlP2,1.9365460335118148,0.6989999999999998,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+7,92.21,mp-aaabkptb,K2Sn(H2N)6,1.9582868315235664,2.4109000000000003,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+8,90.91,mp-aaacqkqj,K2PS3,1.9660855707777916,2.8872754990580787,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+9,89.61,mp-aaabetym,FePCl8,2.084334209724888,1.4417,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+10,88.31,mp-aaackidz,OF2,2.1962881563276344,2.1241,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+11,87.01,mp-aaabetyl,Al2CoCl8,2.240466252954762,0.3431999999999999,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+12,85.71,mp-aaachrwm,FeCl3,2.271085888606323,0.8119000000000001,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+13,84.42,mp-aaabetzy,S3(NO7)2,2.2822067840028635,1.4050011037264358,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+14,83.12,mp-aaabevzu,K2FeH8(SO6)2,2.2873849565947806,0.8790999999999999,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+15,81.82,mp-aaabxjyc,KF3,2.3032139376975054,0.0924019250902516,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+16,80.52,mp-aaabkhxe,LiB13C2,2.304013100842023,2.7108,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+17,79.22,mp-aaacdjyd,LiSiB6,2.3555393810605008,1.6762000000000006,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+18,77.92,mp-aaabkqav,Mg3MnH7,2.35600714879588,1.6630999999999996,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+19,76.62,mp-aaabkted,CsTi(PS4)2,2.386444935805151,1.372,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters
+20,75.32,mp-aaabkoyx,Li4H6Ru,2.4047919376251,2.388,0.0,True,False,Lower density ranks higher; band gap/stability are eligibility filters

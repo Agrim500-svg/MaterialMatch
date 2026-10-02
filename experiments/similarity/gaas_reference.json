@@ -1,0 +1,10 @@
+{
+  "material_id": "mp-2534",
+  "formula_pretty": "GaAs",
+  "band_gap": 0.1839000000000004,
+  "density": 5.053200369484521,
+  "formation_energy_per_atom": -0.44627705625000047,
+  "energy_above_hull": 0.0,
+  "is_stable": true,
+  "is_metal": false
+}
