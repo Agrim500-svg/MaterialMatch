@@ -1,0 +1,31 @@
+{
+  "materials_project_database_version": "2026.04.13",
+  "sample_random_seed": 42,
+  "target": "density",
+  "target_unit": "g/cm^3",
+  "model_scope": "unconditional regressor over the full sample (metals and non-metals).",
+  "best_model_by_group_cv_mae": "hist_gradient_boosting",
+  "random_seed": 42,
+  "group_key": "reduced_formula",
+  "split": "GroupShuffleSplit, 80/20, groups are reduced formulas",
+  "cv": "5-fold GroupKFold on training partition",
+  "feature_count": 153,
+  "feature_source": "formula only; no target-derived properties",
+  "rows_in_input": 10000,
+  "rows_used": 10000,
+  "train_rows": 8011,
+  "test_rows": 1989,
+  "train_groups": 6490,
+  "test_groups": 1623,
+  "target_stats_g_cm3": {
+    "min": 0.0735540334283191,
+    "p25": 3.1431254180622505,
+    "median": 4.418481450744913,
+    "p75": 6.7455720169668885,
+    "max": 22.068784642469456
+  },
+  "python_version": "3.14.8",
+  "pandas_version": "3.0.6",
+  "numpy_version": "2.5.3",
+  "scikit_learn_version": "1.9.1"
+}

@@ -1,4 +1,98 @@
-# MaterialMind Phase 2: Formation-Energy Prediction
+# MaterialMind Prediction Models: V1 Four-Output Layer
+
+**Status:** V1 four-target layer implemented and tested
+**User-facing outputs:** Material Type (Metal/Non-Metal), Band Gap (eV), Formation Energy (eV/atom), Density (g/cm³)
+**Materials Project release:** `2026.04.13`
+**Training data:** reproducible 10,000-record active summary sample from `data/raw/materials_sample.csv`
+
+## V1 architecture
+
+```
+Material formula
+   -> 153 composition descriptors (src/features/composition_features.py)
+      -> metal/non-metal classifier (models/metal_classifier.joblib)
+            Metal  -> band_gap = 0 eV (classifier_only)
+            Non-Metal -> conditional non-metal band-gap regressor (models/band_gap_nonmetal.joblib)
+      -> formation energy regressor (models/formation_energy_per_atom.joblib)
+      -> density regressor (models/density.joblib)
+```
+
+All four models consume the same feature matrix; band_gap, is_metal, and density
+are never input features (assertion-checked in every training script).
+
+## Model 1: Metal/Non-Metal classifier
+
+- **Label:** `is_metal = (band_gap == 0)`; agrees with MP `is_metal` at 99.93%
+  (7 tiny-gap pseudo-metals, band_gap ~1e-6 eV differ). Label is constructed
+  from band_gap only; band_gap is never an input feature.
+- **Class balance:** 5,084 metals / 4,916 non-metals in the sample.
+- **Model:** Random Forest (250 trees), selected by 5-fold GroupKFold mean F1
+  on the training partition.
+- **Split:** GroupShuffleSplit 80/20, reduced-formula groups, seed 42
+  (8,011 train / 1,989 test).
+
+| Metric | Holdout |
+|---|---:|
+| Accuracy | 0.8200 |
+| Precision (metal) | 0.8632 |
+| Recall (metal) | 0.7720 |
+| F1 (metal) | 0.8151 |
+| Confusion matrix (holdout) | TN=842, FP=125, FN=233, TP=789 |
+
+Classification probability is a **model self-confidence estimate**, not accuracy.
+
+## Model 2: Conditional non-metal band-gap regression
+
+- **Scope:** only the 4,916 records with band_gap > 0 (3,933 train / 983 test).
+- **Model:** HistGradientBoosting, selected by 5-fold GroupKFold mean MAE.
+- **Target distribution (eV):** median 1.449, p25 0.538, p75 2.802, max 8.758.
+
+| Model | Holdout MAE (eV) | RMSE (eV) | R² |
+|---|---:|---:|---:|
+| HistGradientBoosting (selected) | 0.786 | 1.060 | 0.531 |
+| Random Forest | 0.787 | 1.076 | 0.517 |
+| Ridge | 0.943 | 1.203 | 0.396 |
+| Mean baseline | 1.292 | 1.548 | ~0.00 |
+
+"Weak spot": near-degenerate non-metals (tiny true gaps predicted as wide-gap).
+Full residuals in `experiments/band_gap_regression/holdout_predictions_and_errors.csv`.
+
+## Model 3: Density regression
+
+- **Scope:** unconditional; all 10,000 rows (8,011 train / 1,989 test).
+- **Model:** HistGradientBoosting, selected by 5-fold GroupKFold mean MAE.
+
+| Model | Holdout MAE (g/cm³) | RMSE (g/cm³) | R² |
+|---|---:|---:|---:|
+| HistGradientBoosting (selected) | 0.381 | 0.582 | 0.962 |
+| Random Forest | 0.368 | 0.586 | 0.961 |
+| Ridge | 0.460 | 0.667 | 0.949 |
+| Mean baseline | 2.303 | 2.964 | ~0.00 |
+
+Largest errors on unusually dense actinides (elemental Pu; see
+`experiments/density_regression/holdout_predictions_and_errors.csv`).
+
+## Reproduction
+
+```powershell
+.\.venv\Scripts\python.exe -m src.models.train_metal_classifier
+.\.venv\Scripts\python.exe -m src.models.train_band_gap_regression
+.\.venv\Scripts\python.exe -m src.models.train_density_regression
+```
+
+## Limitations (whole V1 layer)
+
+1. 10,000-record sample, not the full Materials Project corpus.
+2. Composition-only features cannot distinguish polymorphs or encode structure.
+3. The band-gap classifier boundary inherits 7 noisy tiny-gap labels.
+4. Band-gap magnitude is the weakest model (holdout R² = 0.531) — screening-grade only.
+5. No output is an experimental measurement or a DFT result; all are ML estimates.
+
+The remainder of this page documents the original Phase 2 formation-energy experiment.
+
+---
+
+# Phase 2 original record: Formation-Energy Prediction
 
 **Status:** Initial supervised-learning experiment complete  
 **Target:** `formation_energy_per_atom` (eV/atom)  

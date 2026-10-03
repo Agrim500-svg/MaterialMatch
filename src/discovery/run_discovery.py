@@ -18,7 +18,10 @@ def main() -> None:
     parser.add_argument("query", nargs="?", help="Chemical formula or Materials Project ID")
     parser.add_argument("--image", help="Image path for search_image intent")
     parser.add_argument("--mode", choices=["auto", "text", "structure"], default="auto")
-    parser.add_argument("--target", default="formation_energy_per_atom")
+    parser.add_argument(
+        "--target", default="formation_energy_per_atom",
+        help="material_type, band_gap, formation_energy_per_atom, density, or all",
+    )
     parser.add_argument("--profile", choices=["composition", "properties", "combined"], default="combined")
     parser.add_argument("--k", type=int, default=10)
     parser.add_argument("--no-predictions", action="store_true", help="Omit supplementary ML predictions in global rankings")

@@ -123,7 +123,7 @@ def _gemini_interpret(image_bytes: bytes, mime_type: str, mode: str) -> dict[str
                 "mime_type": "application/json",
                 "schema": RESPONSE_SCHEMA,
             },
-            "generation_config": {"thinking_level": "minimal"},
+            "generation_config": {"thinking_level": os.getenv("GEMINI_THINKING_LEVEL", "low")},
         },
         timeout=90,
     )
@@ -131,8 +131,9 @@ def _gemini_interpret(image_bytes: bytes, mime_type: str, mode: str) -> dict[str
         detail = response.text[:1000]
         raise RuntimeError(f"Gemini image interpretation failed ({response.status_code}): {detail}")
     body = response.json()
-    interaction = body.get("interaction", body)
-    output_text = interaction.get("output_text")
+    from src.conversation.assistant import _extract_output_text
+
+    output_text = _extract_output_text(body)
     if not output_text:
         raise RuntimeError("Gemini returned no structured image interpretation.")
     try:

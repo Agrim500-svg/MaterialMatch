@@ -7,8 +7,8 @@
 
 | Intent | Components called | Returned result |
 |---|---|---|
-| `discover_material` | Materials Project record resolution, Phase 2 formation-energy prediction, Phase 3 similarity search, Phase 4 cluster context when the exact record is in the saved sample | Known database values, separately labelled ML estimate, similar materials, and optional exact cluster context |
-| `predict_property` | Phase 2 | Composition-only formation-energy estimate for a formula or material ID |
+| `discover_material` | Materials Project record resolution, V1 four-model predictions, Phase 3 similarity search, Phase 4 cluster context when the exact record is in the saved sample | Known database values, separately labelled ML estimates for all four V1 properties (material type + probability, two-stage band gap, formation energy, density), similar materials, and optional exact cluster context |
+| `predict_property` | Phase 2 + V1 models | Composition-only prediction for `material_type` (Metal/Non-Metal + model confidence), `band_gap` (two-stage: metal → 0 eV, non-metal → conditional regressor), `density`, or `formation_energy_per_atom`; `target:"all"` returns all four |
 | `find_similar` | Phase 3 | Similar materials using `combined`, `composition`, or `properties` profile |
 | `rank_candidates` | Phase 5 ranking, Phase 2 prediction, optional Phase 4 label lookup | Density-ranked eligible candidates with supplementary formation-energy estimates; predictions do not alter the rank |
 | `search_image` | Gemini Vision image interpretation, then Phase 3 search | Formula/ID interpretation and local composition-similarity results |

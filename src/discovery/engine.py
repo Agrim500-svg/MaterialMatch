@@ -6,7 +6,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-import joblib
 import numpy as np
 import pandas as pd
 
@@ -15,6 +14,8 @@ DEFAULT_DATA = PROJECT_ROOT / "data" / "raw" / "materials_sample.csv"
 PREDICTION_MODEL = PROJECT_ROOT / "models" / "formation_energy_per_atom.joblib"
 CLUSTER_PIPELINE = PROJECT_ROOT / "experiments" / "clustering" / "clustering_pipeline.joblib"
 CLUSTER_ASSIGNMENTS = PROJECT_ROOT / "experiments" / "clustering" / "cluster_assignments.csv"
+
+SUPPORTED_PREDICTION_TARGETS = ("material_type", "band_gap", "formation_energy_per_atom", "density")
 
 
 def _records(frame: pd.DataFrame) -> list[dict[str, Any]]:
@@ -48,6 +49,7 @@ class MaterialMindDiscovery:
         self._prediction_model = None
         self._cluster_pipeline: dict[str, Any] | None = None
         self._cluster_assignments: pd.DataFrame | None = None
+        self._rank_cache: tuple[pd.DataFrame, dict] | None = None
 
     @property
     def materials(self) -> pd.DataFrame:
@@ -66,9 +68,9 @@ class MaterialMindDiscovery:
     @property
     def prediction_model(self):
         if self._prediction_model is None:
-            if not PREDICTION_MODEL.exists():
-                raise FileNotFoundError(f"Trained Phase 2 model not found: {PREDICTION_MODEL}")
-            self._prediction_model = joblib.load(PREDICTION_MODEL)
+            from src.models.predict_property import load_model
+
+            self._prediction_model = load_model("formation_energy_per_atom")
         return self._prediction_model
 
     def _resolve(self, query: str) -> dict[str, Any]:
@@ -110,6 +112,48 @@ class MaterialMindDiscovery:
             "source": "MaterialMind Phase 2 composition-only ML model",
             "warning": "Estimate only; not a Materials Project database value or experimental measurement.",
         }
+
+    def _prediction_block(self, formula: str, target: str) -> dict[str, Any]:
+        """Build the user-facing prediction block for one V1 target."""
+        if target == "material_type":
+            from src.models.predict_property import predict_material_types
+
+            result = predict_material_types([formula])[0]
+            return {
+                "target": "material_type",
+                "material_type": result["material_type"],
+                "classification_probability": result["classification_probability"],
+                "metal_probability": result["metal_probability"],
+                "unit": None,
+                "source": "MaterialMind composition-only Random Forest classifier",
+                "warning": "Classification probability is a model self-confidence estimate, not accuracy.",
+            }
+        if target == "band_gap":
+            from src.models.predict_property import predict_band_gaps
+
+            result = predict_band_gaps([formula])[0]
+            return {
+                "target": "band_gap",
+                "value": result["value"],
+                "unit": "eV",
+                "stage": result["stage"],
+                "material_type": result["material_type"],
+                "classification_probability": result["classification_probability"],
+                "source": ("MaterialMind two-stage model: metal/non-metal classifier routes metals "
+                           "to 0 eV; the conditional non-metal regressor predicts otherwise."),
+                "warning": "Estimate only; not a Materials Project database value or experimental measurement.",
+            }
+        if target == "density":
+            from src.models.predict_property import predict_regression
+
+            return {
+                "target": "density",
+                "value": predict_regression([formula], "density")[0],
+                "unit": "g/cm^3",
+                "source": "MaterialMind composition-only regression model",
+                "warning": "Estimate only; not a Materials Project database value or experimental measurement.",
+            }
+        return self._predict_formation_energy(formula)
 
     def _cluster_context(self, material_id: str | None) -> dict[str, Any] | None:
         if not material_id or not CLUSTER_ASSIGNMENTS.exists():
@@ -160,7 +204,10 @@ class MaterialMindDiscovery:
                 ] if field in reference
             },
             "exact_local_records": _records(known[known_fields]),
-            "ml_prediction": self._predict_formation_energy(formula),
+            "ml_prediction": {
+                name: self._prediction_block(formula, name)
+                for name in SUPPORTED_PREDICTION_TARGETS
+            },
             "similar_materials": _records(neighbors),
             "similarity_note": "Relative similarity scores; not probabilities. Profile: combined when reference properties are available, otherwise composition-only.",
             "cluster_context": self._cluster_context(str(material_id) if material_id else None),
@@ -173,8 +220,12 @@ class MaterialMindDiscovery:
         }
 
     def predict_property(self, query: str, *, target: str = "formation_energy_per_atom") -> dict[str, Any]:
-        if target != "formation_energy_per_atom":
-            raise ValueError("The current Phase 2 model supports only formation_energy_per_atom.")
+        target = target or "formation_energy_per_atom"
+        if target != "all" and target not in SUPPORTED_PREDICTION_TARGETS:
+            raise ValueError(
+                f"Unsupported target '{target}'. Choose from: "
+                f"{', '.join(SUPPORTED_PREDICTION_TARGETS)}, or 'all'."
+            )
         query = (query or "").strip()
         if not query:
             raise ValueError("Provide a chemical formula or Materials Project ID.")
@@ -192,11 +243,21 @@ class MaterialMindDiscovery:
             formula = reduced_formula_or_none(query) or ""
             if not formula:
                 raise ValueError(f"'{query}' is not a recognized chemical formula or Materials Project ID.")
+        if target == "all":
+            return {
+                "intent": "predict_property",
+                "query": query,
+                "resolved_formula": formula,
+                "predictions": {
+                    name: self._prediction_block(formula, name)
+                    for name in SUPPORTED_PREDICTION_TARGETS
+                },
+            }
         return {
             "intent": "predict_property",
             "query": query,
             "resolved_formula": formula,
-            "prediction": self._predict_formation_energy(formula),
+            "prediction": self._prediction_block(formula, target),
         }
 
     def find_similar(self, query: str, *, k: int = 10, profile: str = "combined") -> dict[str, Any]:
@@ -214,7 +275,9 @@ class MaterialMindDiscovery:
             raise ValueError("k must be positive.")
         from src.ranking.rank_candidates import rank_candidates
 
-        candidates, summary = rank_candidates(write_outputs=False)
+        if self._rank_cache is None:
+            self._rank_cache = rank_candidates(write_outputs=False)
+        candidates, base_summary = self._rank_cache
         candidates = candidates.head(k).copy()
         if include_predictions and not candidates.empty:
             from src.features.composition_features import composition_features
@@ -229,10 +292,9 @@ class MaterialMindDiscovery:
         if self._cluster_assignments is not None:
             labels = self._cluster_assignments.set_index("material_id")["cluster"]
             candidates["phase4_cluster_if_in_sample"] = candidates["material_id"].map(labels)
-        summary = json.loads(json.dumps(summary, default=float))
         return {
             "intent": "rank_candidates",
-            "ranking_summary": summary,
+            "ranking_summary": base_summary,
             "ranked_candidates": _records(candidates),
             "ranking_note": "Rank order is from the Phase 5 density-first eligibility workflow; ML formation energy is supplementary and does not change rank.",
         }

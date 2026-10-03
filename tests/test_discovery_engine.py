@@ -22,7 +22,14 @@ def test_discover_material_contract(engine) -> None:
     assert result["intent"] == "discover_material"
     assert result["resolved_reference"]["formula_pretty"] == "GaAs"
     assert result["exact_local_records"], "GaAs row should match the local fixture"
-    assert result["ml_prediction"]["target"] == "formation_energy_per_atom"
+    predictions = result["ml_prediction"]
+    assert set(predictions.keys()) == {
+        "material_type", "band_gap", "formation_energy_per_atom", "density",
+    }
+    assert predictions["formation_energy_per_atom"]["target"] == "formation_energy_per_atom"
+    assert predictions["material_type"]["material_type"] in {"Metal", "Non-Metal"}
+    assert predictions["band_gap"]["unit"] == "eV"
+    assert predictions["density"]["unit"] == "g/cm^3"
     assert len(result["similar_materials"]) == 3
     _json_round_trip(result)
 
@@ -67,8 +74,8 @@ def test_predict_property_never_touches_api_for_formulas(engine, monkeypatch) ->
 
 
 def test_predict_property_rejects_unsupported_target(engine) -> None:
-    with pytest.raises(ValueError, match="supports only formation_energy_per_atom"):
-        engine.predict_property("GaAs", target="band_gap")
+    with pytest.raises(ValueError, match="Unsupported target"):
+        engine.predict_property("GaAs", target="thermal_conductivity")
 
 
 def test_predict_property_rejects_invalid_formula(engine) -> None:

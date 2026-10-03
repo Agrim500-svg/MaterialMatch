@@ -1,0 +1,32 @@
+{
+  "materials_project_database_version": "2026.04.13",
+  "sample_random_seed": 42,
+  "target": "band_gap",
+  "target_unit": "eV",
+  "model_scope": "conditional regressor; trained and valid only for non-metal records (band_gap > 0). Metal routing is handled by models/metal_classifier.joblib.",
+  "best_model_by_group_cv_mae": "hist_gradient_boosting",
+  "random_seed": 42,
+  "group_key": "reduced_formula",
+  "split": "GroupShuffleSplit, 80/20, groups are reduced formulas",
+  "cv": "5-fold GroupKFold on training partition",
+  "feature_count": 153,
+  "feature_source": "formula only; no target-derived properties",
+  "rows_in_input": 10000,
+  "non_metal_rows_in_sample": 4916,
+  "rows_used": 4916,
+  "train_rows": 3933,
+  "test_rows": 983,
+  "train_groups": 3133,
+  "test_groups": 784,
+  "target_stats_eV": {
+    "min": 6.421137691003942e-07,
+    "p25": 0.537825,
+    "median": 1.4493,
+    "p75": 2.802125,
+    "max": 8.758099999999999
+  },
+  "python_version": "3.14.8",
+  "pandas_version": "3.0.6",
+  "numpy_version": "2.5.3",
+  "scikit_learn_version": "1.9.1"
+}
