@@ -30,7 +30,7 @@ function HeaderSearch() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={(e) => {
-          const trimmed = query.trim()
+          const trimmed = query.trim().replace(/[,;.\s]+$/, '')
           if (e.key === 'Enter' && trimmed) {
             const target = canonicalizeFormula(trimmed)
             navigate(`/analyze/${encodeURIComponent(target)}`)
@@ -154,7 +154,9 @@ export default function Layout({ children }) {
               <div className="flex items-center gap-2 mt-space-xs">
                 <span className="w-2 h-2 rounded-full bg-on-tertiary-container" />
                 <span className="font-label-code text-label-code text-on-surface-variant">
-                  Backend + 4 ML models served locally by the FastAPI service
+                  {import.meta.env.VITE_API_URL
+                    ? 'Backend + 4 ML models served via FastAPI cloud API'
+                    : 'Backend + 4 ML models served locally by the FastAPI service'}
                 </span>
               </div>
             </div>

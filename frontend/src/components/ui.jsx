@@ -10,6 +10,7 @@ export function LoadingState({ label = 'Working…' }) {
 export function ErrorState({ error, onRetry }) {
   const message = error?.message || 'Something went wrong.'
   const backendDown = error?.type === 'backend_unavailable'
+  const isCloud = Boolean(import.meta.env.VITE_API_URL)
   return (
     <div className="rounded-xl border border-error-container bg-surface-container-lowest p-5 shadow-sm">
       <div className="flex items-center gap-2">
@@ -21,7 +22,13 @@ export function ErrorState({ error, onRetry }) {
       <p className="mt-1 text-sm text-on-surface-variant font-body-sm">{message}</p>
       {backendDown && (
         <p className="mt-2 text-xs font-label-code text-on-surface-variant bg-surface-container-low p-2 rounded">
-          Start it with: <code className="font-semibold text-on-surface break-all">.venv\Scripts\python.exe -m uvicorn backend.app:app --port 8000</code>
+          {isCloud ? (
+            'The cloud backend (Render free tier) may be waking up from sleep (~30-50s) or completing a redeploy. Please click Retry below.'
+          ) : (
+            <span>
+              Start it with: <code className="font-semibold text-on-surface break-all">.venv\Scripts\python.exe -m uvicorn backend.app:app --port 8000</code>
+            </span>
+          )}
         </p>
       )}
       {onRetry && (
