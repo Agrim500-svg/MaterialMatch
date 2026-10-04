@@ -25,7 +25,7 @@ from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MODEL = "gemini-3-flash-preview"
-FALLBACK_MODELS = ("gemini-3-flash-preview", "gemini-3.1-flash-lite-preview", "gemini-3.8-flash")
+FALLBACK_MODELS = ("gemini-3-flash-preview",)
 MAX_HISTORY_TURNS = 8
 
 ENGINE_INTENTS = {"discover_material", "predict_property", "find_similar", "rank_candidates"}
@@ -143,7 +143,7 @@ def _gemini_structured_call(
                     "https://generativelanguage.googleapis.com/v1beta/interactions",
                     headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
                     json=payload,
-                    timeout=90,
+                    timeout=25,
                 )
             except Exception as exc:
                 last_error_detail = str(exc)

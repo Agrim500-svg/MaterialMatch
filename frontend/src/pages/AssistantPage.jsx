@@ -45,7 +45,7 @@ function UserMessage({ message }) {
   )
 }
 
-function AssistantMessage({ message }) {
+function AssistantMessage({ message, onRetry }) {
   const isError = message.blocked
   return (
     <div className="flex items-start gap-2.5 sm:gap-space-md justify-start">
@@ -71,6 +71,18 @@ function AssistantMessage({ message }) {
         </div>
         <div className="bg-surface-container-low text-on-surface p-3.5 sm:p-space-lg rounded-2xl rounded-tl-none font-body-md text-body-md leading-relaxed whitespace-pre-wrap break-words">
           {message.text}
+          {isError && message.retryText && onRetry && (
+            <div className="mt-3 pt-2.5 border-t border-outline-variant/30 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onRetry(message.retryText)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs font-label-code text-on-surface transition-colors cursor-pointer border border-outline-variant/40"
+              >
+                <span className="material-symbols-outlined text-[14px] text-secondary">refresh</span>
+                <span>Retry this query</span>
+              </button>
+            </div>
+          )}
         </div>
         {message.route && (message.route.intent || message.route.query || message.route.target) && (
           <div className="flex flex-wrap items-center gap-2 text-xs font-label-code text-on-surface-variant">
@@ -159,16 +171,24 @@ export default function AssistantPage() {
       ])
     } catch (error) {
       const latencyMs = Math.max(1, Math.round(performance.now() - startedAt))
+      const isCloud = Boolean(import.meta.env.VITE_API_URL)
+      const isTimeoutOrDown = latencyMs > 35000 || error?.status === 502 || error?.type === 'backend_unavailable'
+
+      let errorText = error instanceof ApiError ? error.message : 'Something went wrong. Please try again.'
+      if (isCloud && isTimeoutOrDown) {
+        errorText = 'The cloud server (Render free tier) was spinning up from sleep (~50s cold boot) or timed out. The server is now awake — please click "Retry this query" below!'
+      } else {
+        errorText = `I couldn't complete that: ${errorText}`
+      }
+
       setMessages((m) => [
         ...m,
         {
           role: 'assistant',
-          text:
-            error instanceof ApiError
-              ? `I couldn't complete that: ${error.message}`
-              : 'Something went wrong. Please try again.',
+          text: errorText,
           intent: null,
           blocked: true,
+          retryText: message,
           latencyMs,
           at: new Date(),
         },
@@ -209,7 +229,7 @@ export default function AssistantPage() {
               message.role === 'user' ? (
                 <UserMessage key={index} message={message} />
               ) : (
-                <AssistantMessage key={index} message={message} />
+                <AssistantMessage key={index} message={message} onRetry={send} />
               ),
             )}
             {busy && (
