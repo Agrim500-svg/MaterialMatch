@@ -178,7 +178,7 @@ export default function Layout({ children }) {
           </div>
           <div className="pt-space-md border-t border-outline-variant/30 flex flex-col sm:flex-row items-center justify-between gap-space-sm">
             <p className="font-body-sm text-body-sm text-on-surface-variant">
-              © 2026 MaterialMatch Platform. High-Throughput Materials Discovery Architecture.
+              © 2026 MaterialMatch Platform-Agrim Karmakar
             </p>
             <div className="flex items-center gap-space-md font-label-code text-label-code text-on-surface-variant">
               <span>MP release 2026.04.13</span>
