@@ -196,7 +196,19 @@ class MaterialSimilarityIndex:
         self.scaled_properties = self.property_scaler.fit_transform(property_imputed)
 
     @classmethod
-    def from_csv(cls, data_path: str | Path = DEFAULT_DATA) -> "MaterialSimilarityIndex":
+    def from_csv(cls, data_path: str | Path = DEFAULT_DATA, use_cache: bool = True) -> "MaterialSimilarityIndex":
+        resolved_data = Path(data_path).resolve()
+        cache_path = PROJECT_ROOT / "models" / "similarity_index.joblib"
+        if use_cache and resolved_data == DEFAULT_DATA.resolve() and cache_path.exists():
+            import joblib
+
+            try:
+                cached = joblib.load(cache_path)
+                if isinstance(cached, cls):
+                    return cached
+            except Exception:
+                pass
+
         materials = pd.read_csv(data_path)
         required = {"material_id", "formula_pretty", *PROPERTY_COLUMNS}
         missing = required - set(materials.columns)
