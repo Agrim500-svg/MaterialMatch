@@ -24,7 +24,8 @@ import requests
 from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_MODEL = "gemini-3.8-flash"
+DEFAULT_MODEL = "gemini-3-flash-preview"
+FALLBACK_MODELS = ("gemini-3-flash-preview", "gemini-3.1-flash-lite-preview", "gemini-3.8-flash")
 MAX_HISTORY_TURNS = 8
 
 ENGINE_INTENTS = {"discover_material", "predict_property", "find_similar", "rank_candidates"}
@@ -113,41 +114,56 @@ def _gemini_structured_call(
     *,
     model_env: str = "GEMINI_CHAT_MODEL",
 ) -> dict[str, Any]:
-    """One Gemini call that must answer with schema-valid JSON (retried once on 5xx)."""
+    """One Gemini call that must answer with schema-valid JSON (retried with fallback models)."""
     load_dotenv(PROJECT_ROOT / ".env")
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError(
             "GEMINI_API_KEY is not configured. Add your Gemini API key to the local .env file."
         )
-    payload = {
-        "model": os.getenv(model_env, DEFAULT_MODEL),
-        "input": input_parts,
-        "response_format": {"type": "text", "mime_type": "application/json", "schema": schema},
-        "generation_config": {"thinking_level": os.getenv("GEMINI_THINKING_LEVEL", "low")},
-    }
-    response = None
-    for attempt in range(3):
-        response = requests.post(
-            "https://generativelanguage.googleapis.com/v1beta/interactions",
-            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
-            json=payload,
-            timeout=90,
-        )
-        if response.ok or response.status_code < 500 or attempt == 2:
-            break
-        time.sleep(2 * (attempt + 1))
-    if not response.ok:
-        detail = response.text[:1000]
-        raise RuntimeError(f"Gemini request failed ({response.status_code}): {detail}")
-    body = response.json()
-    output_text = _extract_output_text(body)
-    if not output_text:
-        raise RuntimeError("Gemini returned no structured output.")
-    try:
-        return json.loads(output_text)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError("Gemini returned malformed JSON.") from exc
+
+    configured_model = os.getenv(model_env, DEFAULT_MODEL)
+    models_to_try = [configured_model]
+    for fb in FALLBACK_MODELS:
+        if fb not in models_to_try:
+            models_to_try.append(fb)
+
+    last_error_detail = ""
+    for model_name in models_to_try:
+        payload = {
+            "model": model_name,
+            "input": input_parts,
+            "response_format": {"type": "text", "mime_type": "application/json", "schema": schema},
+            "generation_config": {"thinking_level": os.getenv("GEMINI_THINKING_LEVEL", "low")},
+        }
+
+        for attempt in range(2):
+            try:
+                response = requests.post(
+                    "https://generativelanguage.googleapis.com/v1beta/interactions",
+                    headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+                    json=payload,
+                    timeout=90,
+                )
+            except Exception as exc:
+                last_error_detail = str(exc)
+                continue
+
+            if response.ok:
+                body = response.json()
+                output_text = _extract_output_text(body)
+                if output_text:
+                    try:
+                        return json.loads(output_text)
+                    except json.JSONDecodeError:
+                        pass
+            else:
+                last_error_detail = f"{model_name} failed ({response.status_code}): {response.text[:200]}"
+                # If rate limited or 503 high demand or 5xx, try fallback model
+                if response.status_code in {429, 503, 500, 502, 504}:
+                    break
+
+    raise RuntimeError(f"Gemini request failed on all models: {last_error_detail}")
 
 
 def _history_excerpt(history: list[dict[str, str]] | None) -> str:

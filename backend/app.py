@@ -14,15 +14,16 @@ Run from the project root:
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 import tempfile
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request, UploadFile
+from fastapi import FastAPI, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -138,6 +139,11 @@ class DiscoverRequest(BaseModel):
 class RankRequest(BaseModel):
     k: int = Field(default=20, ge=1, le=100)
     include_predictions: bool = True
+    material_class: str = "nonmetal"
+    min_gap: float = 0.0
+    max_gap: float = 3.0
+    max_density: float | None = None
+    stable_only: bool = True
 
 
 class ChatTurn(BaseModel):
@@ -183,7 +189,15 @@ def similar(request: SimilarRequest) -> JSONResponse:
 
 @app.post("/api/rank")
 def rank(request: RankRequest) -> JSONResponse:
-    return ok(get_engine().rank_candidates(k=request.k, include_predictions=request.include_predictions))
+    return ok(get_engine().rank_candidates(
+        k=request.k,
+        include_predictions=request.include_predictions,
+        material_class=request.material_class,
+        min_gap=request.min_gap,
+        max_gap=request.max_gap,
+        max_density=request.max_density,
+        stable_only=request.stable_only,
+    ))
 
 
 @app.post("/api/chat")
@@ -191,6 +205,46 @@ def chat(request: ChatRequest) -> JSONResponse:
     """Natural-language entry point: Gemini routes the message to engine intents."""
     history = [turn.model_dump() for turn in request.history]
     return ok(get_assistant().chat(request.message, history=history))
+
+
+# --- Read-only material landscape (existing Phase 4 artifacts) -----------------
+
+LANDSCAPE_DIR = PROJECT_ROOT / "experiments" / "clustering"
+LANDSCAPE_IMAGES = {
+    "clusters": LANDSCAPE_DIR / "material_landscape_clusters.png",
+    "band_gap": LANDSCAPE_DIR / "material_landscape_band_gap.png",
+}
+
+
+@app.get("/api/landscape/summary")
+def landscape_summary() -> JSONResponse:
+    """Metadata + precomputed cluster summaries for the existing landscape artifacts."""
+    metadata_path = LANDSCAPE_DIR / "clustering_metadata.json"
+    summary_path = LANDSCAPE_DIR / "cluster_summary.csv"
+    if not metadata_path.exists() or not summary_path.exists():
+        raise FileNotFoundError(
+            "Landscape artifacts are missing. Run src/clustering/cluster_materials.py first."
+        )
+    import pandas as pd
+
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    cluster_summary = pd.read_csv(summary_path)
+    return ok({
+        "metadata": metadata,
+        "cluster_summary": json.loads(cluster_summary.to_json(orient="records")),
+        "available_images": sorted(LANDSCAPE_IMAGES),
+    })
+
+
+@app.get("/api/landscape/image")
+def landscape_image(kind: str = Query(default="clusters", pattern="^(clusters|band_gap)$")) -> FileResponse:
+    """Serve the precomputed Phase 4 landscape PNG; read-only, no re-computation."""
+    path = LANDSCAPE_IMAGES[kind]
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Landscape image not found: {path.name}. Run src/clustering/cluster_materials.py first."
+        )
+    return FileResponse(path, media_type="image/png")
 
 
 @app.post("/api/search-image")

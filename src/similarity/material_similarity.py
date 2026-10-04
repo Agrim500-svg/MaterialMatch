@@ -28,15 +28,58 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from src.features.composition_features import composition_features
 
 
+_REAL_ELEMENT_SYMBOLS = {Element.from_Z(i).symbol for i in range(1, 119)}
+_LOWER_TO_SYMBOL = {s.lower(): s for s in _REAL_ELEMENT_SYMBOLS}
+
+
 def reduced_formula_or_none(value: Any) -> str | None:
     """Normalize a formula, returning None instead of raising on bad input.
 
     Composition() alone accepts placeholder symbols like 'Xx'; element lookup is
     what downstream featurization uses, so reject unknown elements here as well.
+    Also handles smart casing canonicalization for common lowercase formula inputs.
     """
+    if value is None:
+        return None
+    raw = str(value).strip()
+    if not raw or raw.lower().startswith("mp-"):
+        return None
+
     try:
-        composition = Composition(str(value))
+        composition = Composition(raw)
         for symbol in composition.get_el_amt_dict():
+            if symbol not in _REAL_ELEMENT_SYMBOLS:
+                raise ValueError(f"Unknown element: {symbol}")
+            Element(symbol)
+        return composition.reduced_formula
+    except Exception:
+        pass
+
+    try:
+        tokens = []
+        i = 0
+        while i < len(raw):
+            if raw[i].isspace():
+                i += 1
+                continue
+            two = raw[i : i + 2].lower()
+            one = raw[i : i + 1].lower()
+            if len(two) == 2 and two in _LOWER_TO_SYMBOL:
+                tokens.append(_LOWER_TO_SYMBOL[two])
+                i += 2
+            elif one in _LOWER_TO_SYMBOL:
+                tokens.append(_LOWER_TO_SYMBOL[one])
+                i += 1
+            elif raw[i] in "()[]0123456789.":
+                tokens.append(raw[i])
+                i += 1
+            else:
+                return None
+        candidate = "".join(tokens)
+        composition = Composition(candidate)
+        for symbol in composition.get_el_amt_dict():
+            if symbol not in _REAL_ELEMENT_SYMBOLS:
+                raise ValueError(f"Unknown element: {symbol}")
             Element(symbol)
         return composition.reduced_formula
     except Exception:
@@ -175,12 +218,11 @@ class MaterialSimilarityIndex:
                 return api_reference
             raise ValueError(f"Materials Project ID {query} was not found in the local sample or API.")
 
-        try:
-            reduced = Composition(query).reduced_formula
-        except Exception as exc:
+        reduced = reduced_formula_or_none(query)
+        if not reduced:
             raise ValueError(
                 f"'{query}' is neither an MP material ID nor a valid chemical formula."
-            ) from exc
+            )
 
         reduced_keys = self.materials["formula_pretty"].map(reduced_formula_or_none)
         formula_matches = self.materials[reduced_keys == reduced].copy()

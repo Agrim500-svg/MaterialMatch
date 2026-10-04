@@ -270,14 +270,44 @@ class MaterialMindDiscovery:
             "score_note": "Relative similarity score; not a probability.",
         }
 
-    def rank_candidates(self, *, k: int = 20, include_predictions: bool = True) -> dict[str, Any]:
+    def rank_candidates(
+        self,
+        *,
+        k: int = 20,
+        include_predictions: bool = True,
+        material_class: str = "nonmetal",
+        min_gap: float = 0.0,
+        max_gap: float = 3.0,
+        max_density: float | None = None,
+        stable_only: bool = True,
+    ) -> dict[str, Any]:
         if k < 1:
             raise ValueError("k must be positive.")
         from src.ranking.rank_candidates import rank_candidates
 
-        if self._rank_cache is None:
-            self._rank_cache = rank_candidates(write_outputs=False)
-        candidates, base_summary = self._rank_cache
+        norm_class = (material_class or "nonmetal").strip().lower()
+        is_default = (
+            norm_class in ("nonmetal", "non-metal")
+            and float(min_gap) == 0.0
+            and float(max_gap) == 3.0
+            and max_density is None
+            and stable_only is True
+        )
+
+        if is_default:
+            if self._rank_cache is None:
+                self._rank_cache = rank_candidates(write_outputs=False)
+            candidates, base_summary = self._rank_cache
+        else:
+            candidates, base_summary = rank_candidates(
+                material_class=material_class,
+                min_gap=min_gap,
+                max_gap=max_gap,
+                max_density=max_density,
+                stable_only=stable_only,
+                write_outputs=False,
+            )
+
         candidates = candidates.head(k).copy()
         if include_predictions and not candidates.empty:
             from src.features.composition_features import composition_features
@@ -289,14 +319,14 @@ class MaterialMindDiscovery:
             candidates["prediction_source"] = "MaterialMind Phase 2 estimate; supplementary to database-based rank"
         if self._cluster_assignments is None and CLUSTER_ASSIGNMENTS.exists():
             self._cluster_assignments = pd.read_csv(CLUSTER_ASSIGNMENTS)
-        if self._cluster_assignments is not None:
+        if self._cluster_assignments is not None and not candidates.empty:
             labels = self._cluster_assignments.set_index("material_id")["cluster"]
             candidates["phase4_cluster_if_in_sample"] = candidates["material_id"].map(labels)
         return {
             "intent": "rank_candidates",
             "ranking_summary": base_summary,
             "ranked_candidates": _records(candidates),
-            "ranking_note": "Rank order is from the Phase 5 density-first eligibility workflow; ML formation energy is supplementary and does not change rank.",
+            "ranking_note": "Rank order is from the density-first screening workflow; ML formation energy is supplementary and does not change rank.",
         }
 
     def search_image(self, image_path: str | Path, *, mode: str = "auto", k: int = 10) -> dict[str, Any]:

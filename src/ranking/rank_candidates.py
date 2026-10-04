@@ -29,7 +29,15 @@ def _as_bool(series: pd.Series) -> pd.Series:
     return normalized.map({"true": True, "false": False, "1": True, "0": False})
 
 
-def rank_candidates(*, write_outputs: bool = True) -> tuple[pd.DataFrame, dict]:
+def rank_candidates(
+    *,
+    material_class: str = "nonmetal",
+    min_gap: float = 0.0,
+    max_gap: float = 3.0,
+    max_density: float | None = None,
+    stable_only: bool = True,
+    write_outputs: bool = True,
+) -> tuple[pd.DataFrame, dict]:
     data = pd.read_csv(INPUT_CSV)
     required = {
         "material_id", "formula_pretty", "is_metal", "band_gap", "density",
@@ -44,20 +52,50 @@ def rank_candidates(*, write_outputs: bool = True) -> tuple[pd.DataFrame, dict]:
     data["is_metal"] = _as_bool(data["is_metal"])
     data["is_stable"] = _as_bool(data["is_stable"])
 
-    semiconductor = data.loc[
+    # Baseline semiconductor subset for reference cutoff
+    semiconductor_ref = data.loc[
         data["is_metal"].eq(False)
         & data["band_gap"].gt(GAP_MIN_EXCLUSIVE)
         & data["band_gap"].le(GAP_MAX_INCLUSIVE)
         & data["density"].notna()
-    ].copy()
-    if semiconductor.empty:
-        raise ValueError("No records meet the semiconductor proxy; cannot derive density threshold.")
+    ]
+    p25_cutoff = float(semiconductor_ref["density"].quantile(0.25)) if not semiconductor_ref.empty else 3.0048
 
-    density_cutoff = float(semiconductor["density"].quantile(0.25))
-    eligible = semiconductor.loc[
-        semiconductor["density"].le(density_cutoff)
-        & semiconductor["is_stable"].eq(True)
-    ].copy()
+    norm_class = (material_class or "nonmetal").strip().lower()
+    is_default_screen = (
+        norm_class in ("nonmetal", "non-metal")
+        and float(min_gap) == 0.0
+        and float(max_gap) == 3.0
+        and max_density is None
+        and stable_only is True
+    )
+
+    if is_default_screen:
+        density_cutoff = p25_cutoff
+        eligible = semiconductor_ref.loc[
+            semiconductor_ref["density"].le(density_cutoff)
+            & semiconductor_ref["is_stable"].eq(True)
+        ].copy()
+    else:
+        mask = pd.Series(True, index=data.index)
+        if norm_class in ("nonmetal", "non-metal"):
+            mask &= data["is_metal"].eq(False)
+        elif norm_class == "metal":
+            mask &= data["is_metal"].eq(True)
+
+        if norm_class in ("nonmetal", "non-metal") and float(min_gap) == 0.0:
+            mask &= data["band_gap"].gt(0.0)
+        else:
+            mask &= data["band_gap"].ge(float(min_gap))
+        mask &= data["band_gap"].le(float(max_gap))
+
+        density_cutoff = float(max_density) if max_density is not None else p25_cutoff
+        mask &= data["density"].notna() & data["density"].le(density_cutoff)
+
+        if stable_only:
+            mask &= data["is_stable"].eq(True) | data["energy_above_hull"].eq(0.0)
+
+        eligible = data.loc[mask].copy()
 
     # Density is the stated optimization objective. Band gap and stability are
     # eligibility criteria; energy above hull remains visible for inspection.
@@ -82,27 +120,29 @@ def rank_candidates(*, write_outputs: bool = True) -> tuple[pd.DataFrame, dict]:
     ]
     results = eligible[keep]
     metadata_path = PROJECT_ROOT / "data" / "raw" / "lightweight_semiconductor_sample_metadata.json"
-    sample_metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    sample_metadata = json.loads(metadata_path.read_text(encoding="utf-8")) if metadata_path.exists() else {}
     summary = {
         "source_csv": str(INPUT_CSV.relative_to(PROJECT_ROOT)),
         "source_database_version": sample_metadata.get("database_version"),
         "rows_input": int(len(data)),
-        "semiconductor_proxy_count": int(len(semiconductor)),
+        "semiconductor_proxy_count": int(len(semiconductor_ref)),
         "density_cutoff_g_cm3": density_cutoff,
         "stable_lightweight_candidate_count": int(len(results)),
+        "eligible_candidate_count": int(len(results)),
+        "material_class": norm_class,
         "ranked_by": "density ascending",
         "eligibility": {
-            "is_metal": False,
-            "band_gap_eV": f"({GAP_MIN_EXCLUSIVE}, {GAP_MAX_INCLUSIVE}]",
-            "density_g_cm3": f"<= semiconductor-proxy 25th percentile ({density_cutoff:.6f})",
-            "is_stable": True,
+            "is_metal": False if norm_class in ("nonmetal", "non-metal") else (True if norm_class == "metal" else "all"),
+            "band_gap_eV": f"({GAP_MIN_EXCLUSIVE}, {GAP_MAX_INCLUSIVE}]" if is_default_screen else f"[{min_gap}, {max_gap}]",
+            "density_g_cm3": f"<= {density_cutoff:.6f}",
+            "is_stable": stable_only,
         },
         "ordinal_score_note": "Relative rank mapped linearly from 100 (first) to 0 (last); not a probability or calibrated quality score.",
         "top_n_exported": min(TOP_N, len(results)),
         "top_candidates": results.head(TOP_N)[["rank", "material_id", "formula_pretty", "density", "band_gap"]].to_dict("records"),
     }
 
-    if write_outputs:
+    if write_outputs and is_default_screen:
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         results.to_csv(OUTPUT_DIR / "ranked_candidates.csv", index=False)
         results.head(TOP_N).to_csv(OUTPUT_DIR / "top_20_candidates.csv", index=False)

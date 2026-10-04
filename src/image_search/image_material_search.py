@@ -22,7 +22,8 @@ from pymatgen.core import Composition
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DATA = PROJECT_ROOT / "data" / "raw" / "materials_sample.csv"
-DEFAULT_MODEL = "gemini-3.8-flash"
+DEFAULT_MODEL = "gemini-3-flash-preview"
+FALLBACK_MODELS = ("gemini-3-flash-preview", "gemini-3.1-flash-lite-preview", "gemini-3.8-flash")
 MAX_IMAGE_BYTES = 15 * 1024 * 1024
 SUPPORTED_MIME_TYPES = {"PNG": "image/png", "JPEG": "image/jpeg", "WEBP": "image/webp"}
 
@@ -105,11 +106,17 @@ def _gemini_interpret(image_bytes: bytes, mime_type: str, mode: str) -> dict[str
         "text": "Treat this as a screenshot/chart/table and focus on OCR of formulas and material IDs.",
         "structure": "Treat this as a crystal structure diagram and carefully report visible atom labels and composition.",
     }[mode]
-    response = requests.post(
-        "https://generativelanguage.googleapis.com/v1beta/interactions",
-        headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
-        json={
-            "model": os.getenv("GEMINI_VISION_MODEL", DEFAULT_MODEL),
+
+    configured_model = os.getenv("GEMINI_VISION_MODEL", DEFAULT_MODEL)
+    models_to_try = [configured_model]
+    for fb in FALLBACK_MODELS:
+        if fb not in models_to_try:
+            models_to_try.append(fb)
+
+    last_error_detail = ""
+    for model_name in models_to_try:
+        payload = {
+            "model": model_name,
             "input": [
                 {"type": "text", "text": f"{PROMPT}\n\nRequested mode: {mode_text}"},
                 {
@@ -124,23 +131,37 @@ def _gemini_interpret(image_bytes: bytes, mime_type: str, mode: str) -> dict[str
                 "schema": RESPONSE_SCHEMA,
             },
             "generation_config": {"thinking_level": os.getenv("GEMINI_THINKING_LEVEL", "low")},
-        },
-        timeout=90,
-    )
-    if not response.ok:
-        detail = response.text[:1000]
-        raise RuntimeError(f"Gemini image interpretation failed ({response.status_code}): {detail}")
-    body = response.json()
-    from src.conversation.assistant import _extract_output_text
+        }
 
-    output_text = _extract_output_text(body)
-    if not output_text:
-        raise RuntimeError("Gemini returned no structured image interpretation.")
-    try:
-        result = json.loads(output_text)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError("Gemini returned malformed JSON for image interpretation.") from exc
-    return result
+        for attempt in range(2):
+            try:
+                response = requests.post(
+                    "https://generativelanguage.googleapis.com/v1beta/interactions",
+                    headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+                    json=payload,
+                    timeout=90,
+                )
+            except Exception as exc:
+                last_error_detail = str(exc)
+                continue
+
+            if response.ok:
+                body = response.json()
+                from src.conversation.assistant import _extract_output_text
+
+                output_text = _extract_output_text(body)
+                if output_text:
+                    try:
+                        return json.loads(output_text)
+                    except json.JSONDecodeError:
+                        pass
+            else:
+                last_error_detail = f"{model_name} failed ({response.status_code}): {response.text[:200]}"
+                # If rate limited or 503 high demand or 5xx, try fallback model
+                if response.status_code in {429, 503, 500, 502, 504}:
+                    break
+
+    raise RuntimeError(f"Gemini image interpretation failed on all models: {last_error_detail}")
 
 
 def search_material_image(
