@@ -34,10 +34,12 @@ from src.discovery.engine import MaterialMindDiscovery
 
 app = FastAPI(title="MaterialMind API", version="0.1.0")
 
-frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
+frontend_origins_raw = os.getenv("FRONTEND_ORIGIN", "*")
+frontend_origins = [o.strip() for o in frontend_origins_raw.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[frontend_origin],
+    allow_origins=frontend_origins if frontend_origins else ["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

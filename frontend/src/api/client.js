@@ -12,10 +12,13 @@ export class ApiError extends Error {
   }
 }
 
+const BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+const url = (path) => `${BASE_URL}${path}`
+
 async function post(path, body) {
   let response
   try {
-    response = await fetch(path, {
+    response = await fetch(url(path), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -36,7 +39,7 @@ async function post(path, body) {
 async function postForm(path, formData) {
   let response
   try {
-    response = await fetch(path, { method: 'POST', body: formData })
+    response = await fetch(url(path), { method: 'POST', body: formData })
   } catch {
     throw new ApiError(0, 'backend_unavailable', 'Cannot reach the MaterialMind backend.')
   }
@@ -69,17 +72,17 @@ export const api = {
 }
 
 export async function fetchLandscapeSummary() {
-  const response = await fetch('/api/landscape/summary')
+  const response = await fetch(url('/api/landscape/summary'))
   const payload = await response.json().catch(() => null)
   if (response.ok && payload?.ok) return payload.data
   throw new ApiError(response.status, payload?.error?.type, payload?.error?.message || 'Landscape unavailable.')
 }
 
-export const landscapeImageUrl = (kind) => `/api/landscape/image?kind=${kind}`
+export const landscapeImageUrl = (kind) => `${BASE_URL}/api/landscape/image?kind=${kind}`
 
 export async function fetchHealth() {
   try {
-    const response = await fetch('/api/health')
+    const response = await fetch(url('/api/health'))
     const payload = await response.json()
     return response.ok && payload?.ok === true
   } catch {
