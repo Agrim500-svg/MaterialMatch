@@ -1,5 +1,7 @@
 # MaterialMatch — AI-Powered Materials Discovery Platform
 
+[![Live App](https://img.shields.io/badge/Live_App-material--match--chi.vercel.app-success?logo=vercel&logoColor=white)](https://material-match-chi.vercel.app)
+[![API Status](https://img.shields.io/badge/API_Status-Live%20on%20Render-009688?logo=render&logoColor=white)](https://materialmatch.onrender.com/api/health)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688?logo=fastapi)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-19.0-61DAFB?logo=react)](https://react.dev)
@@ -7,6 +9,10 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC?logo=tailwind-css)](https://tailwindcss.com)
 [![Tests](https://img.shields.io/badge/Pytest-43%20passed-success?logo=pytest)](https://pytest.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+> 🚀 **Live Production Deployment**:
+> - **Web Application**: [https://material-match-chi.vercel.app](https://material-match-chi.vercel.app)
+> - **FastAPI Discovery Engine API**: [https://materialmatch.onrender.com](https://materialmatch.onrender.com/api/health)
 
 An end-to-end, machine-learning-powered computational materials discovery and screening platform. MaterialMatch predicts crystallographic, electronic, and thermodynamic properties in milliseconds directly from chemical stoichiometry, discovers latent compositional analogs across a 10,000-record Materials Project benchmark, projects topological manifold landscapes, and supports multimodal vision ingestion alongside a grounded scientific AI co-pilot.
 
